@@ -204,6 +204,12 @@ class KtorCodegen : AbstractKotlinCodegen() {
         if (schema?.format?.equals("decimal") == true) {
             property.isDecimal = true
         }
+        if (schema?.format?.equals("date") == true) {
+            property.isDate = true
+        }
+        if (schema?.format?.equals("date-time") == true) {
+            property.isDateTime = true
+        }
 
         return property
     }
@@ -213,6 +219,16 @@ class KtorCodegen : AbstractKotlinCodegen() {
         model.vars.forEach {
             if (it.isDecimal) {
                 model.imports.add("dev.icerock.moko.network.bignum.BigNumSerializer")
+            }
+            if (it.isDate) {
+                model.imports.add("dev.icerock.moko.parcelize.TypeParceler")
+                model.imports.add("dev.evolt.emektebApp.common.util.LocalDateParceler")
+                model.isDate = true
+            }
+            if (it.isDateTime) {
+                model.imports.add("dev.icerock.moko.parcelize.TypeParceler")
+                model.imports.add("dev.evolt.emektebApp.common.util.LocalDateTimeParceler")
+                model.isDateTime = true
             }
         }
         return model
