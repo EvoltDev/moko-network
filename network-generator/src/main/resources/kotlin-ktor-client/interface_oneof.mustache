@@ -1,0 +1,10 @@
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+import dev.icerock.moko.network.schemas.ComposedSchemaSerializer
+import dev.icerock.moko.network.exceptions.DataNotFitAnyOfSchema
+
+@Serializable
+{{>classes_modifiers}} sealed interface {{classname}}

@@ -13,7 +13,7 @@ import dev.icerock.moko.parcelize.Parcelable
 {{#isAlias}}typealias {{classname}} = {{dataType}}{{/isAlias}}
 {{#vendorExtensions.x-allOfGeneration}}{{>data_class_allof}}{{/vendorExtensions.x-allOfGeneration}}
 {{#vendorExtensions.x-anyOfGeneration}}{{>data_class_anyof}}{{/vendorExtensions.x-anyOfGeneration}}
-
-{{^isEnum}}{{^isAlias}}{{^vendorExtensions.x-allOfGeneration}}{{^vendorExtensions.x-anyOfGeneration}}{{>data_class}}{{/vendorExtensions.x-anyOfGeneration}}{{/vendorExtensions.x-allOfGeneration}}{{/isAlias}}{{/isEnum}}
+{{#vendorExtensions.x-oneOfGeneration}}{{>interface_oneof}}{{/vendorExtensions.x-oneOfGeneration}}
+{{^isEnum}}{{^isAlias}}{{^vendorExtensions.x-allOfGeneration}}{{^vendorExtensions.x-anyOfGeneration}}{{^vendorExtensions.x-oneOfGeneration}}{{>data_class}}{{/vendorExtensions.x-oneOfGeneration}}{{/vendorExtensions.x-anyOfGeneration}}{{/vendorExtensions.x-allOfGeneration}}{{/isAlias}}{{/isEnum}}
 {{/model}}
 {{/models}}

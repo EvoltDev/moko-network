@@ -33,6 +33,14 @@ internal class ComposedSchemaProcessor(
                 anyOfSchemas = schema.anyOf
             )
         }
+        if (schema.oneOf != null) {
+            return processOneOfSchema(
+                schemas = openApi.components.schemas,
+                schema = schema,
+                context = context,
+                oneOfSchemas = schema.oneOf
+            )
+        }
 
         return schema
     }
@@ -77,6 +85,31 @@ internal class ComposedSchemaProcessor(
         return Schema<Any>().apply {
             `$ref` = "#/components/schemas/$newSchemaName"
         }
+    }
+
+    private fun processOneOfSchema(
+        schemas: MutableMap<String, Schema<*>>,
+        schema: ComposedSchema,
+        context: SchemaContext,
+        oneOfSchemas: List<Schema<*>>
+    ): Schema<*> {
+        if (context !is SchemaContext.SchemaComponent) {
+            return schema
+        }
+        schema.addExtension("x-oneOfGeneration", true)
+        oneOfSchemas.forEach {
+            val name = it.`$ref`?.substringAfterLast("/") ?: return@forEach
+            val existingSchema = schemas[name] ?: return@forEach
+            if (existingSchema.extensions == null) {
+                existingSchema.addExtension("x-interfaces", LinkedHashSet(listOf("Parcelable")))
+            }
+            val interfaces =
+                existingSchema.extensions["x-interfaces"] as LinkedHashSet<String>
+
+            interfaces.add(context.schemaName)
+        }
+        schema.name = context.schemaName
+        return schema
     }
 
     private fun extractSchema(
@@ -124,6 +157,7 @@ internal class ComposedSchemaProcessor(
                     method.name.lowercase().capitalize()
                 ) + "_response_" + this.responseName
             }
+
             is SchemaContext.Response -> this.responseName
             is SchemaContext.Request -> this.requestName
             is SchemaContext.OperationRequest -> operationIdGenerator(
@@ -131,6 +165,7 @@ internal class ComposedSchemaProcessor(
                 pathName,
                 method.name.lowercase().capitalize()
             ) + "_requestBody"
+
             is SchemaContext.ParameterComponent -> this.parameterName
             is SchemaContext.SchemaComponent -> this.schemaName
             is SchemaContext.PropertyComponent -> this.schemaName.orEmpty() + "_" + this.propertyName

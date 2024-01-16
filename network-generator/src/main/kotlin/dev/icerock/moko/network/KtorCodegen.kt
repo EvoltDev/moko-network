@@ -7,17 +7,10 @@ package dev.icerock.moko.network
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.Operation
 import io.swagger.v3.oas.models.Paths
-import io.swagger.v3.oas.models.media.ArraySchema
-import io.swagger.v3.oas.models.media.MediaType
-import io.swagger.v3.oas.models.media.ObjectSchema
-import io.swagger.v3.oas.models.media.Schema
+import io.swagger.v3.oas.models.media.*
 import io.swagger.v3.oas.models.servers.Server
 import org.apache.commons.lang3.StringUtils
-import org.openapitools.codegen.CodegenConstants
-import org.openapitools.codegen.CodegenModel
-import org.openapitools.codegen.CodegenOperation
-import org.openapitools.codegen.CodegenProperty
-import org.openapitools.codegen.CodegenType
+import org.openapitools.codegen.*
 import org.openapitools.codegen.config.GlobalSettings
 import org.openapitools.codegen.languages.AbstractKotlinCodegen
 
@@ -25,6 +18,7 @@ import org.openapitools.codegen.languages.AbstractKotlinCodegen
 class KtorCodegen : AbstractKotlinCodegen() {
 
     private val openApiProcessor = OpenApiProcessor()
+    private val openApiPostProcessor = OpenApiProcessor()
 
     /**
      * Constructs an instance of `KtorCodegen`.
@@ -50,7 +44,6 @@ class KtorCodegen : AbstractKotlinCodegen() {
         typeMapping["URI"] = "kotlin.String"
         typeMapping["object"] = "JsonObject"
         typeMapping["decimal"] = "BigNum"
-        typeMapping[ONE_OF_REPLACE_TYPE_NAME] = "JsonElement"
         typeMapping["AnyType"] = "JsonElement"
 
         importMapping["JsonObject"] = "kotlinx.serialization.json.JsonObject"
@@ -68,11 +61,14 @@ class KtorCodegen : AbstractKotlinCodegen() {
 
         // Add all processors for openapi spec
         openApiProcessor.apply {
-            addProcessor(OneOfOperatorProcessor(ONE_OF_REPLACE_TYPE_NAME))
             addProcessor(SchemaEnumNullProcessor())
             ComposedSchemaProcessor { operation, path, method ->
                 getOrGenerateOperationId(operation, path, method)
             }.also { addProcessor(it) }
+        }
+
+        openApiPostProcessor.apply {
+            addProcessor(VendorExtensionsProcessor)
         }
 
         GlobalSettings.setProperty(CodegenConstants.SKIP_FORM_MODEL, "false")
@@ -121,6 +117,7 @@ class KtorCodegen : AbstractKotlinCodegen() {
             ?.let { filterPaths(openAPI.paths, it) }
 
         openApiProcessor.process(openAPI)
+        openApiPostProcessor.process(openAPI)
 
         val schemas: MutableMap<String, Schema<*>> = openAPI.components.schemas
 
@@ -142,7 +139,20 @@ class KtorCodegen : AbstractKotlinCodegen() {
                     }
                     jsonSchema.items = objectSchema
                 }
+
                 jsonSchema is ObjectSchema && jsonSchema.`$ref` == null -> {
+                    // Create new name for component scheme
+                    val newBodySchemaName = "${requestBodyName}Object"
+                    // Add new scheme to components
+                    schemas[newBodySchemaName] = jsonSchema
+                    // Replace old requestBody item scheme to ref
+                    val objectSchema = Schema<Any>().apply {
+                        `$ref` = "#/components/schemas/$newBodySchemaName"
+                    }
+                    jsonContent.schema = objectSchema
+                }
+
+                jsonSchema is ComposedSchema && !jsonSchema.oneOf.isNullOrEmpty() && jsonSchema.`$ref` == null -> {
                     // Create new name for component scheme
                     val newBodySchemaName = "${requestBodyName}Object"
                     // Add new scheme to components
@@ -278,7 +288,5 @@ class KtorCodegen : AbstractKotlinCodegen() {
         const val ADDITIONAL_OPTIONS_KEY_IS_OPEN = "isOpen"
         const val ADDITIONAL_OPTIONS_KEY_IS_INTERNAL = "nonPublicApi"
         const val ADDITIONAL_OPTIONS_KEY_ENUM_FALLBACK_NULL = "isEnumFallbackNull"
-
-        private const val ONE_OF_REPLACE_TYPE_NAME = "oneOfElement"
     }
 }
