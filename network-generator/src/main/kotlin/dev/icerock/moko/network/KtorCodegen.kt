@@ -232,12 +232,12 @@ class KtorCodegen : AbstractKotlinCodegen() {
             }
             if (it.isDate) {
                 model.imports.add("dev.icerock.moko.parcelize.TypeParceler")
-                model.imports.add("dev.evolt.emektebApp.common.util.LocalDateParceler")
+                model.imports.add("dev.evolt.emekteb.util.LocalDateParceler")
                 model.isDate = true
             }
             if (it.isDateTime) {
                 model.imports.add("dev.icerock.moko.parcelize.TypeParceler")
-                model.imports.add("dev.evolt.emektebApp.common.util.LocalDateTimeParceler")
+                model.imports.add("dev.evolt.emekteb.util.LocalDateTimeParceler")
                 model.isDateTime = true
             }
         }
